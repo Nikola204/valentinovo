@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Valentine?</title>
+  <style>
+    :root{
+      --bg: #fff5f7;
+      --card: #ffffff;
+      --text: #111827;
+      --yes: #22c55e;
+      --no:  #ef4444;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      background: radial-gradient(circle at top, #ffe4e6, var(--bg));
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .card{
+      width:min(560px, 100%);
+      background:var(--card);
+      border-radius:24px;
+      padding:28px 22px 30px;
+      box-shadow:0 20px 45px rgba(0,0,0,.10);
+      text-align:center;
+    }
+    .sticker{ font-size:64px; user-select:none; margin-bottom:6px; }
+    h1{ margin: 10px 0 20px; font-size: clamp(22px, 4vw, 34px); }
+
+    .btns{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-top: 6px;
+      padding-bottom: 12px;
+    }
+    .btns.stack{ flex-direction: column; }
+
+    button{
+      border:0;
+      cursor:pointer;
+      font-weight:800;
+      padding:14px 22px;
+      border-radius:16px;
+      color:white;
+      font-size:18px;
+      line-height: 1;
+      min-width:140px;
+      box-shadow: 0 10px 22px rgba(0,0,0,.12);
+      transition: font-size 180ms ease, padding 180ms ease, min-width 180ms ease, width 180ms ease, filter 180ms ease;
+    }
+    #yesBtn{ background:var(--yes); }
+    #noBtn{ background:var(--no); }
+    button:active{ filter:brightness(.95); }
+
+    /* SUCCESS VIEW */
+    #successView{
+      position:fixed;
+      inset:0;
+      display:none;
+      place-items:center;
+      background: radial-gradient(circle at top, #ffe4e6, #fff);
+      padding: 28px;
+      z-index: 9999;
+      text-align:center;
+      overflow: hidden;
+    }
+    #successView.show{ display:grid; }
+
+    #confettiCanvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      z-index: 1;
+    }
+    #successContent{
+      position: relative;
+      z-index: 2;
+    }
+
+    .yeeey{
+      font-size: clamp(34px, 6vw, 60px);
+      font-weight: 900;
+      margin: 0 0 10px;
+    }
+    .sub{
+      margin: 0 0 18px;
+      font-size: clamp(16px, 2.5vw, 20px);
+      font-weight: 700;
+      opacity: .9;
+    }
+
+    .gif{
+      width: min(420px, 90vw);
+      height: auto;
+      border-radius: 22px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.12);
+      background: #fff;
+      display:block;
+      margin: 0 auto;
+    }
+
+    /* ---------- MOBILE / RESPONSIVE ---------- */
+    @media (max-width: 480px){
+      body{ padding: 14px; }
+
+      .card{
+        width: 100%;
+        padding: 20px 16px 22px;
+        border-radius: 20px;
+      }
+
+      .sticker{
+        font-size: 52px;
+        margin-bottom: 4px;
+      }
+
+      h1{
+        margin: 8px 0 14px;
+        font-size: 24px;
+        line-height: 1.15;
+      }
+
+      /* na mobitelu odmah u stupac */
+      .btns{
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      button{
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      #successView{ padding: 16px; }
+
+      .yeeey{ font-size: 42px; }
+      .sub{ font-size: 18px; margin-bottom: 14px; }
+
+      .gif{
+        width: 100%;
+        max-width: 360px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="questionView" class="card">
+    <div class="sticker" aria-hidden="true">🧸💞</div>
+    <h1 id="questionTitle">Will you be my Valentine?</h1>
+
+    <div class="btns" id="btnsRow">
+      <button id="yesBtn">Yes</button>
+      <button id="noBtn">No</button>
+    </div>
+  </div>
+
+  <div id="successView" aria-live="polite">
+    <canvas id="confettiCanvas"></canvas>
+
+    <div id="successContent">
+      <h2 class="yeeey">Yeeeeey 💋💋💋</h2>
+      <p class="sub">You mine now</p>
+
+      <img class="gif"
+           src="https://media.tenor.com/rv8nXaTih6gAAAAj/masha-and-the-bear-good-for-you.gif"
+           alt="Masha and the Bear GIF" />
+    </div>
+  </div>
+
+  <script>
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+    const btnsRow = document.getElementById("btnsRow");
+
+    const questionTitle = document.getElementById("questionTitle");
+    const questionView = document.getElementById("questionView");
+    const successView  = document.getElementById("successView");
+
+    let noClicks = 0;
+    const NO_LIMIT = 15;
+
+    let yesLevel = 0;
+    let noLevel  = 0;
+
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+    function isMobile(){
+      return window.matchMedia && window.matchMedia("(max-width: 480px)").matches;
+    }
+
+    function applySizes(){
+      // YES raste (na desktopu i širina, na mobitelu više “visina”/font)
+      const yesFont = clamp(18 + yesLevel * 2.2, 18, isMobile() ? 52 : 64);
+      const yesPadY = clamp(14 + yesLevel * 1.2, 14, isMobile() ? 34 : 40);
+      const yesPadX = clamp(22 + yesLevel * 2.6, 22, isMobile() ? 40 : 110);
+      const yesMinW = clamp(140 + yesLevel * 18, 140, 500);
+
+      yesBtn.style.fontSize = yesFont + "px";
+      yesBtn.style.padding  = `${yesPadY}px ${yesPadX}px`;
+
+      if (isMobile()){
+        // na mobitelu uvijek 100% širina (čisto i stabilno)
+        yesBtn.style.width = "100%";
+        yesBtn.style.minWidth = "0";
+        yesBtn.style.maxWidth = "100%";
+      } else {
+        yesBtn.style.width = "auto";
+        yesBtn.style.minWidth = yesMinW + "px";
+        yesBtn.style.maxWidth = "100%";
+      }
+
+      // NO se smanjuje
+      const noFont = clamp(18 - noLevel * 1.0, 10, 18);
+      const noPadY = clamp(14 - noLevel * 0.7, 6, 14);
+      const noPadX = clamp(22 - noLevel * 1.4, 10, 22);
+      const noMinW = clamp(140 - noLevel * 10, 70, 140);
+
+      noBtn.style.fontSize = noFont + "px";
+      noBtn.style.padding  = `${noPadY}px ${noPadX}px`;
+      if (!isMobile()){
+        noBtn.style.minWidth = noMinW + "px";
+      } else {
+        noBtn.style.minWidth = "0";
+      }
+
+      // na desktopu tek kad YES naraste -> stack; na mobitelu je stack već preko CSS-a
+      if (!isMobile()){
+        if (yesMinW >= 360) btnsRow.classList.add("stack");
+        else btnsRow.classList.remove("stack");
+      }
+    }
+
+    noBtn.addEventListener("click", () => {
+      noClicks++;
+      yesLevel++;
+      noLevel++;
+
+      if (noClicks >= NO_LIMIT) {
+        questionTitle.textContent = "Ajde plssss 🥺";
+        noBtn.style.display = "none";
+        btnsRow.classList.add("stack");
+        yesLevel += 6;
+      }
+
+      applySizes();
+    });
+
+    // --- konfeti ---
+    const canvas = document.getElementById("confettiCanvas");
+    const ctx = canvas.getContext("2d");
+    let confetti = [];
+    let rafId = null;
+    let stopAt = 0;
+
+    function resizeCanvas(){
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+
+    function startConfetti(durationMs = 3500){
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      resizeCanvas();
+      confetti = [];
+      const count = isMobile() ? 160 : 220; // malo manje na mobitelu (brže)
+      const colors = ["#ff4d6d", "#ffb703", "#22c55e", "#3b82f6", "#a855f7", "#fb7185"];
+
+      for (let i = 0; i < count; i++){
+        confetti.push({
+          x: rand(0, window.innerWidth),
+          y: rand(-window.innerHeight * 0.4, -20),
+          vx: rand(-2.2, 2.2),
+          vy: rand(2.5, 6.0),
+          w: rand(6, 12),
+          h: rand(8, 16),
+          rot: rand(0, Math.PI * 2),
+          vr: rand(-0.12, 0.12),
+          color: colors[(Math.random() * colors.length) | 0],
+          alpha: rand(0.75, 1)
+        });
+      }
+
+      stopAt = performance.now() + durationMs;
+
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function tick(t){
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+      const gravity = 0.06;
+      const wind = 0.01;
+
+      for (const p of confetti){
+        p.vy += gravity;
+        p.vx += wind * Math.sin(p.y * 0.01);
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+
+        if (p.x < -20) p.x = window.innerWidth + 20;
+        if (p.x > window.innerWidth + 20) p.x = -20;
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+
+        if (p.y > window.innerHeight + 40){
+          p.y = rand(-120, -20);
+          p.x = rand(0, window.innerWidth);
+          p.vy = rand(2.5, 6.0);
+        }
+      }
+
+      if (t < stopAt){
+        rafId = requestAnimationFrame(tick);
+      } else {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    window.addEventListener("resize", () => {
+      if (rafId) resizeCanvas();
+      applySizes();
+    });
+
+    yesBtn.addEventListener("click", () => {
+      questionView.style.display = "none";
+      successView.classList.add("show");
+      document.body.style.padding = "0";
+      startConfetti(4000);
+    });
+
+    applySizes();
+  </script>
+</body>
+</html>
