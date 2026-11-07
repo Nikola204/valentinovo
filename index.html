@@ -2,7 +2,7 @@
 <html lang="hr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Valentine?</title>
   <style>
     :root{
@@ -13,9 +13,14 @@
       --no:  #ef4444;
     }
     *{ box-sizing:border-box; }
+    html{ -webkit-text-size-adjust:100%; }
+    button{ touch-action:manipulation; -webkit-appearance:none; appearance:none; }
+    button:focus-visible{ outline:3px solid #111827; outline-offset:4px; }
+    @media (prefers-reduced-motion: reduce){ button{ transition:none; } }
     body{
       margin:0;
       min-height:100vh;
+      min-height:100svh;
       display:grid;
       place-items:center;
       background: radial-gradient(circle at top, #ffe4e6, var(--bg));
@@ -70,10 +75,10 @@
       display:none;
       place-items:center;
       background: radial-gradient(circle at top, #ffe4e6, #fff);
-      padding: 28px;
+      padding: max(28px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
       z-index: 9999;
       text-align:center;
-      overflow: hidden;
+      overflow: auto;
     }
     #successView.show{ display:grid; }
 
@@ -88,6 +93,9 @@
     #successContent{
       position: relative;
       z-index: 2;
+      width:100%;
+      min-width:0;
+      margin:auto;
     }
 
     .yeeey{
@@ -145,7 +153,7 @@
         max-width: 100%;
       }
 
-      #successView{ padding: 16px; }
+      #successView{ padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
 
       .yeeey{ font-size: 42px; }
       .sub{ font-size: 18px; margin-bottom: 14px; }
@@ -164,16 +172,16 @@
     <h1 id="questionTitle">Will you be my Valentine?</h1>
 
     <div class="btns" id="btnsRow">
-      <button id="yesBtn">Yes</button>
-      <button id="noBtn">No</button>
+      <button type="button" id="yesBtn">Yes</button>
+      <button type="button" id="noBtn">No</button>
     </div>
   </div>
 
   <div id="successView" aria-live="polite">
-    <canvas id="confettiCanvas"></canvas>
+    <canvas id="confettiCanvas" aria-hidden="true"></canvas>
 
     <div id="successContent">
-      <h2 class="yeeey">Yeeeeey</h2>
+      <h2 class="yeeey" tabindex="-1">Yeeeeey</h2>
       <p class="sub">You mine now</p>
 
       <img class="gif"
@@ -268,7 +276,7 @@
     let stopAt = 0;
 
     function resizeCanvas(){
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
       canvas.width = Math.floor(window.innerWidth * dpr);
       canvas.height = Math.floor(window.innerHeight * dpr);
       canvas.style.width = window.innerWidth + "px";
@@ -278,7 +286,7 @@
     function rand(min, max){ return Math.random() * (max - min) + min; }
 
     function startConfetti(durationMs = 3500){
-      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (!ctx || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
 
       resizeCanvas();
       confetti = [];
@@ -354,6 +362,7 @@
     yesBtn.addEventListener("click", () => {
       questionView.style.display = "none";
       successView.classList.add("show");
+      successView.querySelector("h2").focus();
       document.body.style.padding = "0";
       startConfetti(4000);
     });
